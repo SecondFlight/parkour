@@ -1,0 +1,12 @@
+name: Parkour
+main: io.github.secondflight.Parkour.Main.Parkour
+version: 0.01
+
+description: >
+                 A simple parkour plugin for the Exorath hub
+commands:
+
+  test:
+    description: for debugging
+  parkour:
+    description: use /parkour help for info
