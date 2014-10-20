@@ -1,26 +1,32 @@
 package io.github.secondflight.Parkour.Main;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.Vector;
 
 public class Parkour extends JavaPlugin{
 	public final Logger logger = Logger.getLogger("Minecraft");
 	public Parkour plugin;
 		
+	public static Map<Player, String> edit = new HashMap<Player, String>();
+	public static Map<Player, String> string = new HashMap<Player, String>();
+	public static Map<Player, Block> block = new HashMap<Player, Block>();
+	
 	public void onEnable() {
-		plugin = this;
-			
-			
+		
+		plugin = this;	
 			
 		PluginDescriptionFile pdfFile = this.getDescription();
 		this.logger.info(pdfFile.getName() + " has been Enabled.");
@@ -42,21 +48,18 @@ public class Parkour extends JavaPlugin{
 				boolean error = false;
 				
 				try {
-					int i = Integer.parseInt(args[2]);
+					Integer.parseInt(args[2]);
 				} catch (Exception ex) {
 					error = true;
 				}
 				if (!error) {
-					if ((!(getConfig().get("locations") == null) && !(getConfig().getConfigurationSection("locations").getKeys(false).contains(args[1]))) || getConfig().get("locations") == null) {
-						getConfig().set("locations." + args[1] + ".x", player.getLocation().getBlockX());
-						getConfig().set("locations." + args[1] + ".y", player.getLocation().getBlockY());
-						getConfig().set("locations." + args[1] + ".z", player.getLocation().getBlockZ());
-						getConfig().set("locations." + args[1] + ".world", player.getWorld().getName());
-						getConfig().set("locations." + args[1] + ".points", Integer.parseInt(args[2]));
+					if ((!(getConfig().get("courses") == null) && !(getConfig().getConfigurationSection("courses").getKeys(false).contains(args[1]))) || getConfig().get("courses") == null) {
+						getConfig().set("courses." + args[1] + ".world", player.getWorld().getName());
+						getConfig().set("courses." + args[1] + ".points", Integer.parseInt(args[2]));
 						
 						//saveConfig();
 						
-						player.sendMessage("A new end point has been created at your location. Don't forget to place down a block there, such as a sign, or the end point will be inaccessable.");
+						player.sendMessage("A new course has been created. Do " + ChatColor.RED + "/parkour edit " + args[1] + ChatColor.WHITE + " to continue.");
 					} else {
 						player.sendMessage(ChatColor.RED + "There is already a parkour end sign with that name!"); 
 						player.sendMessage("");
@@ -76,21 +79,29 @@ public class Parkour extends JavaPlugin{
 			
 			
 			if (command.getName().equalsIgnoreCase("parkour") && args.length == 1 && args[0].equalsIgnoreCase("list")) {
-				if (!(getConfig().get("locations") == null)) {
-					if (getConfig().getConfigurationSection("locations").getKeys(false).size() > 0) {
+				if (!(getConfig().get("courses") == null)) {
+					if (getConfig().getConfigurationSection("courses").getKeys(false).size() > 0) {
 						player.sendMessage("Here are the active parkour end points:");
 						player.sendMessage("");
 					
-						for (String s : getConfig().getConfigurationSection("locations").getKeys(false)) {
-							player.sendMessage("Name: " + s);
-							player.sendMessage("X: " + getConfig().get("locations." + s + ".x"));
-							player.sendMessage("Y: " + getConfig().get("locations." + s + ".y"));
-							player.sendMessage("Z: " + getConfig().get("locations." + s + ".z"));
-							player.sendMessage("World: " + getConfig().get("locations." + s + ".world"));
-							player.sendMessage("Point value: " + getConfig().get("locations." + s + ".points"));
+						for (String s : getConfig().getConfigurationSection("courses").getKeys(false)) {
+							player.sendMessage(ChatColor.YELLOW + "Name: " + ChatColor.WHITE + s);
+							player.sendMessage("Start X: " + getConfig().get("courses." + s + ".start.x"));
+							player.sendMessage("Start Y: " + getConfig().get("courses." + s + ".start.y"));
+							player.sendMessage("Start Z: " + getConfig().get("courses." + s + ".start.z"));
+							player.sendMessage("End X: " + getConfig().get("courses." + s + ".end.x"));
+							player.sendMessage("End Y: " + getConfig().get("courses." + s + ".end.y"));
+							player.sendMessage("End Z: " + getConfig().get("courses." + s + ".end.z"));
+							player.sendMessage("World: " + getConfig().get("courses." + s + ".world"));
+							player.sendMessage("Point value: " + getConfig().get("courses." + s + ".points"));
 							
-							if (Bukkit.getServer().getWorld(getConfig().getString("locations." + s + ".world")).getBlockAt(getConfig().getInt("locations." + s + ".x"), getConfig().getInt("locations." + s + ".y"), getConfig().getInt("locations." + s + ".z")).getType() == Material.AIR) {
-								player.sendMessage(ChatColor.RED + "WARNING: There is no block at this location, making it inaccessable."); 
+							if (Bukkit.getServer().getWorld(getConfig().getString("courses." + s + ".world")).getBlockAt(getConfig().getInt("courses." + s + ".start.x"), getConfig().getInt("courses." + s + ".start.y"), getConfig().getInt("courses." + s + ".start.z")).getType() == Material.AIR) {
+								player.sendMessage(ChatColor.RED + "WARNING: There is no block at the start location, making it inaccessable."); 
+								player.sendMessage("This can be fixed by placing a block, such as a sign, at the location. You can teleport to this location by using " + ChatColor.RED + "/parkour tp " + s + ChatColor.WHITE + ".");
+							}
+							
+							if (Bukkit.getServer().getWorld(getConfig().getString("courses." + s + ".world")).getBlockAt(getConfig().getInt("courses." + s + ".end.x"), getConfig().getInt("courses." + s + ".end.y"), getConfig().getInt("courses." + s + ".end.z")).getType() == Material.AIR) {
+								player.sendMessage(ChatColor.RED + "WARNING: There is no block at the end location, making it inaccessable."); 
 								player.sendMessage("This can be fixed by placing a block, such as a sign, at the location. You can teleport to this location by using " + ChatColor.RED + "/parkour tp " + s + ChatColor.WHITE + ".");
 							}
 							
@@ -110,11 +121,11 @@ public class Parkour extends JavaPlugin{
 			}
 			
 			if (command.getName().equalsIgnoreCase("parkour") && args.length == 2 && args[0].equalsIgnoreCase("tp")) {
-				if (!(getConfig().get("locations") == null)) {
-					if (getConfig().getConfigurationSection("locations").getKeys(false).size() > 0) {
+				if (!(getConfig().get("courses") == null)) {
+					if (getConfig().getConfigurationSection("courses").getKeys(false).size() > 0) {
 						boolean error = true;
 						
-						for (String s : getConfig().getConfigurationSection("locations").getKeys(false)) {
+						for (String s : getConfig().getConfigurationSection("courses").getKeys(false)) {
 							if (s.equals(args[1])) {
 								error = false;
 								break;
@@ -122,7 +133,7 @@ public class Parkour extends JavaPlugin{
 						}
 						
 						if (!error) {
-							player.teleport (new Location(Bukkit.getServer().getWorld(getConfig().getString("locations." + args[1] + ".world")), (double) getConfig().getInt("locations." + args[1] + ".x") + 0.5, (double) getConfig().getInt("locations." + args[1] + ".y"), (double) getConfig().getInt("locations." + args[1] + ".z") + 0.5));
+							player.teleport (new Location(Bukkit.getServer().getWorld(getConfig().getString("courses." + args[1] + ".world")), (double) getConfig().getInt("courses." + args[1] + ".end.x") + 0.5, (double) getConfig().getInt("courses." + args[1] + ".end.y"), (double) getConfig().getInt("courses." + args[1] + ".end.z") + 0.5));
 						} else {
 							player.sendMessage(ChatColor.RED + "Invalid course name.");
 							player.sendMessage("You can use " + ChatColor.RED + "/parkour list" + ChatColor.WHITE + " to get all the active courses and their names.");
@@ -142,11 +153,11 @@ public class Parkour extends JavaPlugin{
 			}
 			
 			if (command.getName().equalsIgnoreCase("parkour") && args.length == 2 && args[0].equalsIgnoreCase("remove")) {
-				if (!(getConfig().get("locations") == null)) {
-					if (getConfig().getConfigurationSection("locations").getKeys(false).size() > 0) {
+				if (!(getConfig().get("courses") == null)) {
+					if (getConfig().getConfigurationSection("courses").getKeys(false).size() > 0) {
 						boolean error = true;
 						
-						for (String s : getConfig().getConfigurationSection("locations").getKeys(false)) {
+						for (String s : getConfig().getConfigurationSection("courses").getKeys(false)) {
 							if (s.equals(args[1])) {
 								error = false;
 								break;
@@ -154,7 +165,7 @@ public class Parkour extends JavaPlugin{
 						}
 						
 						if (!error) {
-							getConfig().getConfigurationSection("locations").set(args[1], null);
+							getConfig().getConfigurationSection("courses").set(args[1], null);
 							//saveConfig();
 							
 							player.sendMessage("Course '" + args[1] + "' has successfully been removed.");
@@ -170,6 +181,48 @@ public class Parkour extends JavaPlugin{
 				}
 			} else if (command.getName().equalsIgnoreCase("parkour") && args[0].equalsIgnoreCase("remove") && !(args.length == 2)) {
 				player.sendMessage(ChatColor.RED + "Usage: /parkour remove [course name]");
+				player.sendMessage("Use " + ChatColor.RED + "/parkour help" + ChatColor.WHITE + " for more info.");
+			}
+			
+			if (command.getName().equalsIgnoreCase("parkour") && args.length > 2 && args[0].equalsIgnoreCase("edit")) {
+				if (!(getConfig().get("courses") == null)) {
+					if (getConfig().getConfigurationSection("courses").getKeys(false).size() > 0) {
+						boolean error = true;
+						
+						for (String s : getConfig().getConfigurationSection("courses").getKeys(false)) {
+							if (s.equals(args[1])) {
+								error = false;
+								break;
+							}
+						}
+						
+						if (!error) {
+							if (args[2].equalsIgnoreCase("setstart")) {
+								getConfig().set("courses." + args[1] + ".start.x", player.getLocation().getBlockX());
+								getConfig().set("courses." + args[1] + ".start.y", player.getLocation().getBlockY());
+								getConfig().set("courses." + args[1] + ".start.z", player.getLocation().getBlockZ());
+								player.sendMessage(ChatColor.GREEN + "The start point for " + getConfig().getString("courses." + args[1] + ".name") + " has been set to your current location.");
+							} else if (args[2].equalsIgnoreCase("setend")) {
+								getConfig().set("courses." + args[1] + ".end.x", player.getLocation().getBlockX());
+								getConfig().set("courses." + args[1] + ".end.y", player.getLocation().getBlockY());
+								getConfig().set("courses." + args[1] + ".end.z", player.getLocation().getBlockZ());
+								player.sendMessage(ChatColor.GREEN + "The end point for " + getConfig().getString("courses." + args[1] + ".name") + " has been set to your current location.");
+							} else if (args.length == 4 && args[2].equalsIgnoreCase("setname")) {
+								getConfig().set("courses." + args[1] + ".end.x", args[3]);
+							}
+						} else {
+							player.sendMessage(ChatColor.RED + "Invalid course name.");
+							player.sendMessage("You can use " + ChatColor.RED + "/parkour list" + ChatColor.WHITE + " to get all the active courses and their names.");
+						}
+					} else {
+						player.sendMessage(ChatColor.RED + "There are no active parkour courses to edit.");
+					}
+				} else {
+					player.sendMessage(ChatColor.RED + "There are no active parkour courses to edit.");
+				}
+			} else if (command.getName().equalsIgnoreCase("parkour") && args[0].equalsIgnoreCase("edit") && !(args.length > 2)) {
+				//TODO: usage
+				player.sendMessage(ChatColor.RED + "Usage: /parkour edit [course name]");
 				player.sendMessage("Use " + ChatColor.RED + "/parkour help" + ChatColor.WHITE + " for more info.");
 			}
 			
