@@ -201,12 +201,12 @@ public class Parkour extends JavaPlugin{
 								getConfig().set("courses." + args[1] + ".start.x", player.getLocation().getBlockX());
 								getConfig().set("courses." + args[1] + ".start.y", player.getLocation().getBlockY());
 								getConfig().set("courses." + args[1] + ".start.z", player.getLocation().getBlockZ());
-								player.sendMessage(ChatColor.GREEN + "The start point for " + getConfig().getString("courses." + args[1] + ".name") + " has been set to your current location.");
+								player.sendMessage(ChatColor.GREEN + "The start point for '" + args[1] + "' has been set to your current location.");
 							} else if (args[2].equalsIgnoreCase("setend")) {
 								getConfig().set("courses." + args[1] + ".end.x", player.getLocation().getBlockX());
 								getConfig().set("courses." + args[1] + ".end.y", player.getLocation().getBlockY());
 								getConfig().set("courses." + args[1] + ".end.z", player.getLocation().getBlockZ());
-								player.sendMessage(ChatColor.GREEN + "The end point for " + getConfig().getString("courses." + args[1] + ".name") + " has been set to your current location.");
+								player.sendMessage(ChatColor.GREEN + "The end point for '" + args[1] + "' has been set to your current location.");
 							} else if (args.length == 4 && args[2].equalsIgnoreCase("setname")) {
 								getConfig().set("courses." + args[1] + ".end.x", args[3]);
 							}
@@ -222,7 +222,7 @@ public class Parkour extends JavaPlugin{
 				}
 			} else if (command.getName().equalsIgnoreCase("parkour") && args[0].equalsIgnoreCase("edit") && !(args.length > 2)) {
 				//TODO: usage
-				player.sendMessage(ChatColor.RED + "Usage: /parkour edit [course name]");
+				player.sendMessage(ChatColor.RED + "Usage: /parkour edit [course name] [action]");
 				player.sendMessage("Use " + ChatColor.RED + "/parkour help" + ChatColor.WHITE + " for more info.");
 			}
 			
