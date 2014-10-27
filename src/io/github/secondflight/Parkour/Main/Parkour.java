@@ -15,7 +15,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -24,9 +23,7 @@ public class Parkour extends JavaPlugin implements Listener{
 	public final Logger logger = Logger.getLogger("Minecraft");
 	public Parkour plugin;
 		
-	public static Map<Player, String> edit = new HashMap<Player, String>();
-	public static Map<Player, String> string = new HashMap<Player, String>();
-	public static Map<Player, Block> block = new HashMap<Player, Block>();
+	public static Map<String, Course> courses = new HashMap<String, Course>();
 	
 	public void onEnable() {
 		
@@ -39,26 +36,30 @@ public class Parkour extends JavaPlugin implements Listener{
 			
 		getConfig().options().copyDefaults(true);
 		saveConfig();
+		
+		configToMap();
 	}
 		
 	public void onDisable() {
 			
 	}
 	
+	
 	@EventHandler
 	public void clickEvent (PlayerInteractEvent event) {
 		if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
 			Block b = event.getClickedBlock();
-			for (String s : getConfig().getConfigurationSection("courses").getKeys(false)) {
+			for (String s : courses.keySet()) {
+				Course course = courses.get(s);
 				
-				if (!(getConfig().get("courses." + s + ".start.x") == null)) {
-					if (b.getX() == getConfig().getInt("courses." + s + ".start.x") && b.getY() == getConfig().getInt("courses." + s + ".start.y") && b.getZ() == getConfig().getInt("courses." + s + ".start.z")) {
+				if (!(course.start == null)) {
+					if (b.equals(course.start)) {
 						event.getPlayer().sendMessage("start");
 					}
 				}
 				
-				if (!(getConfig().get("courses." + s + ".end.x") == null)) {
-					if (b.getX() == getConfig().getInt("courses." + s + ".end.x") && b.getY() == getConfig().getInt("courses." + s + ".end.y") && b.getZ() == getConfig().getInt("courses." + s + ".end.z")) {
+				if (!(course.end == null)) {
+					if (b.equals(course.end)) {
 						event.getPlayer().sendMessage("end");
 					}
 				}
@@ -83,6 +84,7 @@ public class Parkour extends JavaPlugin implements Listener{
 						getConfig().set("courses." + args[1] + ".world", player.getWorld().getName());
 						getConfig().set("courses." + args[1] + ".points", Integer.parseInt(args[2]));
 						
+						configToMap();
 						//saveConfig();
 						
 						player.sendMessage("A new course has been created. Do " + ChatColor.RED + "/parkour edit " + args[1] + ChatColor.WHITE + " to continue.");
@@ -107,7 +109,7 @@ public class Parkour extends JavaPlugin implements Listener{
 			if (command.getName().equalsIgnoreCase("parkour") && args.length == 1 && args[0].equalsIgnoreCase("list")) {
 				if (!(getConfig().get("courses") == null)) {
 					if (getConfig().getConfigurationSection("courses").getKeys(false).size() > 0) {
-						player.sendMessage("Here are the active parkour end points:");
+						player.sendMessage("Here are the active parkour courses:");
 						player.sendMessage("");
 					
 						for (String s : getConfig().getConfigurationSection("courses").getKeys(false)) {
@@ -192,6 +194,7 @@ public class Parkour extends JavaPlugin implements Listener{
 						
 						if (!error) {
 							getConfig().getConfigurationSection("courses").set(args[1], null);
+							courses.remove(args[1]);
 							//saveConfig();
 							
 							player.sendMessage("Course '" + args[1] + "' has successfully been removed.");
@@ -227,12 +230,22 @@ public class Parkour extends JavaPlugin implements Listener{
 								getConfig().set("courses." + args[1] + ".start.x", player.getLocation().getBlockX());
 								getConfig().set("courses." + args[1] + ".start.y", player.getLocation().getBlockY());
 								getConfig().set("courses." + args[1] + ".start.z", player.getLocation().getBlockZ());
+								
+								configToMap();
+								//saveConfig();
+								
 								player.sendMessage(ChatColor.GREEN + "The start point for '" + args[1] + "' has been set to your current location.");
+							
 							} else if (args[2].equalsIgnoreCase("setend")) {
 								getConfig().set("courses." + args[1] + ".end.x", player.getLocation().getBlockX());
 								getConfig().set("courses." + args[1] + ".end.y", player.getLocation().getBlockY());
 								getConfig().set("courses." + args[1] + ".end.z", player.getLocation().getBlockZ());
+								
+								configToMap();
+								//saveConfig();
+								
 								player.sendMessage(ChatColor.GREEN + "The end point for '" + args[1] + "' has been set to your current location.");
+							
 							} else if (args.length == 4 && args[2].equalsIgnoreCase("setname")) {
 								getConfig().set("courses." + args[1] + ".end.x", args[3]);
 							}
@@ -258,5 +271,23 @@ public class Parkour extends JavaPlugin implements Listener{
 		}
 		
 		return false;
+	}
+	
+	public void configToMap () {
+		if (!(getConfig().get("courses") == null)) {
+			for (String s : getConfig().getConfigurationSection("courses").getKeys(false)) {
+				Course course = new Course (s, getConfig().getInt("courses." + s + ".points"));
+			
+				if (!(getConfig().get("courses." + s + ".start.x") == null)) {
+					course.start = Bukkit.getServer().getWorld(getConfig().getString("courses." + s + ".world")).getBlockAt(getConfig().getInt("courses." + s + ".start.x"), getConfig().getInt("courses." + s + ".start.y"), getConfig().getInt("courses." + s + ".start.z"));
+				}
+			
+				if (!(getConfig().get("courses." + s + ".end.x") == null)) {
+					course.end = Bukkit.getServer().getWorld(getConfig().getString("courses." + s + ".world")).getBlockAt(getConfig().getInt("courses." + s + ".end.x"), getConfig().getInt("courses." + s + ".end.y"), getConfig().getInt("courses." + s + ".end.z"));
+				}
+			
+				courses.put(course.name, course);
+			}
+		}
 	}
 }
