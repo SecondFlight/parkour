@@ -46,7 +46,14 @@ public class Parkour extends JavaPlugin implements Listener{
 			
 	}
 	
-	
+	/*
+	@EventHandler
+	public void joinEvent (PlayerJoinEvent event) {
+		if (!(getConfig().get("highscores." + event.getPlayer().getUniqueId()) == null)) {
+			getConfig().set("highscores." + event.getPlayer().getUniqueId(), "hi");
+		}
+	}
+	*/
 	
 	@EventHandler
 	public void clickEvent (PlayerInteractEvent event) {
@@ -66,21 +73,22 @@ public class Parkour extends JavaPlugin implements Listener{
 				if (!(course.end == null)) {
 					if (b.equals(course.end)) {
 						if (startTime.containsKey(p)) {
-							p.sendMessage(ChatColor.GREEN + "Yay!");
 							Date d = new Date();
 							int total = (int) d.getTime() - startTime.get(p);
-							int hours = (int) Math.floor(total / 3600000);
-							int minutes = (int) Math.floor((total - (hours * 3600000)) / 60000);
-							int seconds = (int) Math.floor((total - (hours * 3600000) - (minutes * 60000)) / 1000);
-							int milliseconds = (int) Math.floor((total - (hours * 3600000) - (minutes * 60000) - (seconds * 1000)));
 							
-							String gc = ChatColor.GREEN + ":" + ChatColor.WHITE;
+							p.sendMessage(ChatColor.GREEN + "Your time was " + msToString(total, ChatColor.GREEN));
 							
-							if (!(hours == 0)) {
-								p.sendMessage(ChatColor.GREEN + "Your time was " + ChatColor.WHITE + hours + gc + String.format("%02d", minutes) + gc + String.format("%02d", seconds)  + gc + String.format("%03d", milliseconds));
+							if (getConfig().get("highscores." + event.getPlayer().getUniqueId() + "." + course.name) != null) {
+								if (getConfig().getInt("highscores." + event.getPlayer().getUniqueId() + "." + course.name) >= total) {
+									p.sendMessage(ChatColor.GREEN + "You beat your previous best of " + msToString(getConfig().getInt("highscores." + event.getPlayer().getUniqueId() + "." + course.name), ChatColor.GREEN) + ChatColor.GREEN + "!");
+									getConfig().set("highscores." + event.getPlayer().getUniqueId() + "." + course.name, total);
+								} else {
+									p.sendMessage(ChatColor.RED + "You did not beat your previous best. Your best time on this course is " + msToString(getConfig().getInt("highscores." + event.getPlayer().getUniqueId() + "." + course.name), ChatColor.RED) + ChatColor.RED + ".");
+								}
 							} else {
-								p.sendMessage(ChatColor.GREEN + "Your time was " + ChatColor.WHITE + String.format("%02d", minutes) + gc + String.format("%02d", seconds)  + gc + String.format("%03d", milliseconds));
+								getConfig().set("highscores." + event.getPlayer().getUniqueId() + "." + course.name, total);
 							}
+							
 							clearTime(p);
 						}
 					}
@@ -319,5 +327,24 @@ public class Parkour extends JavaPlugin implements Listener{
 	
 	public void clearTime (Player player) {
 		startTime.remove(player);
+	}
+	
+	public String msToString (int total, ChatColor color) {
+		int hours = (int) Math.floor(total / 3600000);
+		int minutes = (int) Math.floor((total - (hours * 3600000)) / 60000);
+		int seconds = (int) Math.floor((total - (hours * 3600000) - (minutes * 60000)) / 1000);
+		int ms = (int) Math.floor((total - (hours * 3600000) - (minutes * 60000) - (seconds * 1000)));
+		
+		String gc = color + ":" + ChatColor.WHITE;
+		
+		String time;
+		
+		if (!(hours == 0)) {
+			time = (ChatColor.WHITE + Integer.toString(hours) + gc + String.format("%02d", minutes) + gc + String.format("%02d", seconds)  + gc + String.format("%03d", ms));
+		} else {
+			time = (ChatColor.WHITE + String.format("%02d", minutes) + gc + String.format("%02d", seconds)  + gc + String.format("%03d", ms));
+		}
+		
+		return time;
 	}
 }
