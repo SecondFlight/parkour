@@ -1,5 +1,6 @@
 package io.github.secondflight.Parkour.Main;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -24,6 +25,7 @@ public class Parkour extends JavaPlugin implements Listener{
 	public Parkour plugin;
 		
 	public static Map<String, Course> courses = new HashMap<String, Course>();
+	public static Map<Player, Integer> startTime = new HashMap<Player, Integer>();
 	
 	public void onEnable() {
 		
@@ -45,22 +47,42 @@ public class Parkour extends JavaPlugin implements Listener{
 	}
 	
 	
+	
 	@EventHandler
 	public void clickEvent (PlayerInteractEvent event) {
 		if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
 			Block b = event.getClickedBlock();
+			Player p = event.getPlayer();
 			for (String s : courses.keySet()) {
 				Course course = courses.get(s);
 				
 				if (!(course.start == null)) {
 					if (b.equals(course.start)) {
-						event.getPlayer().sendMessage("start");
+						storeTime(p);
+						p.sendMessage(ChatColor.GREEN + "Go!");
 					}
 				}
 				
 				if (!(course.end == null)) {
 					if (b.equals(course.end)) {
-						event.getPlayer().sendMessage("end");
+						if (startTime.containsKey(p)) {
+							p.sendMessage(ChatColor.GREEN + "Yay!");
+							Date d = new Date();
+							int total = (int) d.getTime() - startTime.get(p);
+							int hours = (int) Math.floor(total / 3600000);
+							int minutes = (int) Math.floor((total - (hours * 3600000)) / 60000);
+							int seconds = (int) Math.floor((total - (hours * 3600000) - (minutes * 60000)) / 1000);
+							int milliseconds = (int) Math.floor((total - (hours * 3600000) - (minutes * 60000) - (seconds * 1000)));
+							
+							String gc = ChatColor.GREEN + ":" + ChatColor.WHITE;
+							
+							if (!(hours == 0)) {
+								p.sendMessage(ChatColor.GREEN + "Your time was " + ChatColor.WHITE + hours + gc + String.format("%02d", minutes) + gc + String.format("%02d", seconds)  + gc + String.format("%03d", milliseconds));
+							} else {
+								p.sendMessage(ChatColor.GREEN + "Your time was " + ChatColor.WHITE + String.format("%02d", minutes) + gc + String.format("%02d", seconds)  + gc + String.format("%03d", milliseconds));
+							}
+							clearTime(p);
+						}
 					}
 				}
 			}
@@ -289,5 +311,13 @@ public class Parkour extends JavaPlugin implements Listener{
 				courses.put(course.name, course);
 			}
 		}
+	}
+	
+	public void storeTime (Player player) {
+		startTime.put(player, (int) new Date().getTime());
+	}
+	
+	public void clearTime (Player player) {
+		startTime.remove(player);
 	}
 }
