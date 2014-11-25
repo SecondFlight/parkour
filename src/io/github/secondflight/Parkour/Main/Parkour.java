@@ -17,6 +17,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -45,6 +46,18 @@ public class Parkour extends JavaPlugin implements Listener{
 		
 	public void onDisable() {
 			
+	}
+	
+	@EventHandler
+	public void onJoin (PlayerJoinEvent event) {
+		Player p = event.getPlayer();
+		if (p.isOp()) {
+			if (getConfig().getString("admin." + event.getPlayer().getUniqueId().toString() + ".hasAdmin") == null || !(getConfig().getString("admin." + event.getPlayer().getUniqueId().toString() + ".hasAdmin").equals("true"))) {
+				getConfig().set("admin." + event.getPlayer().getUniqueId().toString() + ".hasAdmin", "true");
+				getConfig().set("admin." + event.getPlayer().getUniqueId().toString() + ".name", p.getDisplayName());
+				saveConfig();
+			}
+		}
 	}
 	
 	@EventHandler
@@ -78,7 +91,7 @@ public class Parkour extends JavaPlugin implements Listener{
 										getConfig().set("highscores." + event.getPlayer().getUniqueId() + "." + course.name, total);
 										saveConfig();
 									} else {
-										p.sendMessage(ChatColor.RED + "You did not beat your previous best. Your best time on this course is " + msToString(getConfig().getInt("highscores." + event.getPlayer().getUniqueId() + "." + course.name), ChatColor.RED) + ChatColor.RED + ".");
+										p.sendMessage(ChatColor.GRAY + "You did not beat your previous best time (" + msToString(getConfig().getInt("highscores." + event.getPlayer().getUniqueId() + "." + course.name), ChatColor.GRAY) + ChatColor.GRAY + "). Better luck next time.");
 									}
 								} else {
 									getConfig().set("highscores." + event.getPlayer().getUniqueId() + "." + course.name, total);
@@ -103,6 +116,13 @@ public class Parkour extends JavaPlugin implements Listener{
 		
 		if(sender instanceof Player) {
 			Player player = (Player) sender;
+			
+			if (command.getName().equalsIgnoreCase("parkour") && !(args[0].equalsIgnoreCase("list"))) {
+				if (!(hasAdmin(player))) {
+					return false;
+				}
+			}
+			
 			if (command.getName().equalsIgnoreCase("parkour") && args.length == 3 && args[0].equalsIgnoreCase("new")) {
 				boolean error = false;
 				
@@ -306,6 +326,49 @@ public class Parkour extends JavaPlugin implements Listener{
 				//TODO: usage
 				player.sendMessage(ChatColor.RED + "Usage: /parkour edit [course name] [action]");
 				player.sendMessage("Use " + ChatColor.RED + "/parkour help" + ChatColor.WHITE + " for more info.");
+			} else if (command.getName().equalsIgnoreCase("parkour") && args[0].equalsIgnoreCase("admin") && !(args.length == 3)) {
+				if (args[1].equalsIgnoreCase("add")) {
+					boolean showError = true;
+					
+					for (Player p : Bukkit.getServer().getOnlinePlayers()) {
+						
+						if (args[2].equals(p.getDisplayName())) {
+							getConfig().set("admin." + p.getUniqueId().toString(), "true");
+							showError = false;
+							saveConfig();
+							break;
+						}
+					}
+					
+					if (showError) {
+						player.sendMessage(ChatColor.GRAY + "Player does not exist or is not online.");
+					} else {
+						player.sendMessage(ChatColor.GREEN + "Player " + args[2] + " has been added to the admin list for the parkour plugin.");
+					}
+				} else if (args[1].equalsIgnoreCase("remove")) {
+					if (!(getConfig().get("admin") == null)) {
+						if (getConfig().getConfigurationSection("admin").getKeys(false).size() > 0) {
+							boolean showError = true;
+							
+							for (String s : getConfig().getConfigurationSection("admin").getKeys(false)) {
+								if (getConfig().get("admin." + s + ".name").equals(args[2])) {
+									getConfig().set("admin." + s, "");
+									getConfig().set("admin." + s + ".name", "");
+									getConfig().set("admin." + s + ".hasAdmin", "");
+									showError = false;
+									saveConfig();
+									break;
+								}
+							}
+							
+							if (showError) {
+								player.sendMessage(ChatColor.GRAY + "This player does not seem to be listed as an admin.");
+							} else {
+								player.sendMessage(ChatColor.GREEN + "Successfully removed " + args[2] + " from the admin list. Please note that they will be automatically re-added next time they join if they are opped on the server.");
+							}
+						}
+					}
+				}
 			}
 			
 			if (command.getName().equalsIgnoreCase("parkour") && args.length == 1 && args[0].equalsIgnoreCase("help")) {
@@ -322,7 +385,7 @@ public class Parkour extends JavaPlugin implements Listener{
 				player.sendMessage("");
 				player.sendMessage("/parkour edit [name] setname [new name]");
 				player.sendMessage("    Sets the name of the given parkour course to the given new name.");
-				player.sendMessage("    " + ChatColor.RED + ChatColor.BOLD + "WARNING! This will break player high scores for this course! Tread with caution.");
+				player.sendMessage("    " + ChatColor.RED + ChatColor.BOLD + "WARNING! This does not transfer player high scores to the newly named course. This means that the high scores will still be stored under the old name, making them inaccesable. Tread with caution.");
 				player.sendMessage("");
 				player.sendMessage("/parkour remove [name]");
 				player.sendMessage("    Removes the given parkour course.");
@@ -334,10 +397,17 @@ public class Parkour extends JavaPlugin implements Listener{
 				player.sendMessage("/parkour list");
 				player.sendMessage("    Lists the registered parkour courses, along with some useful info about each one.");
 				player.sendMessage("    " + ChatColor.ITALIC + "Note: You can add the 'debug' argument at the end of the command to have it display extra information.");
+				player.sendMessage("");
+				player.sendMessage("/parkour admin [add/remove] [player]");
+				player.sendMessage("    Adds or removes admin permissions for the given player.");
 			}
 			
 			if (command.getName().equalsIgnoreCase("test")) {
-				// test goes here lel
+				if (getConfig().get("admin." + player.getUniqueId().toString()) != null) {
+					player.sendMessage("u has admin tho");
+				} else {
+					player.sendMessage("try again tho, tha forec be wiff u tho");
+				}
 			}
 		}
 		
@@ -387,5 +457,14 @@ public class Parkour extends JavaPlugin implements Listener{
 		}
 		
 		return time;
+	}
+	
+	public boolean hasAdmin (Player player) {
+		if (getConfig().getString("admin." + player.getUniqueId().toString() + ".hasAdmin").equals("true")) {
+			return true;
+		} else {
+			player.sendMessage(ChatColor.RED + "You do not have permission to do this.");
+			return false;
+		}
 	}
 }
